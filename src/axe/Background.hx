@@ -39,7 +39,7 @@ class Background extends h2d.Object {
 	}
 
 
-    public function drawmir(ccx:Float,ccy:Float){
+    public function drawdraft(ccx:Float,ccy:Float){
 
         var cl:Float=30;
         var cr = dst(ccx, ccy);
@@ -51,17 +51,36 @@ class Background extends h2d.Object {
 		g.lineTo(ccx, ccy);
 		g.lineTo(0, cr);
 
+        g.drawCircle(0, 0, cr);
+
+
+
+        g.lineStyle(0);
+		g.endFill();
+
+    }
+
+    public function drawmir(ccx:Float,ccy:Float){
+
+        var cl:Float=30;
+        var cr = dst(ccx, ccy);
+        var ra = rap(0,-cr,ccx,ccy);
+        var dx=Math.sqrt(cl*cl/(1+ra*ra));
+
         g.lineStyle(2, color_mir);
         g.moveTo(ccx-dx,ccy-dx*ra);
         g.lineTo(ccx+dx,ccy+dx*ra);
 
 		g.lineStyle(0);
 
-		g.beginFill(0x333333);
+		g.beginFill(color_mir);
 		g.drawCircle(ccx, ccy, 3, 6);
+
+		g.lineStyle(0);
 		g.endFill();
 
     }
+
 	public function redraw() {
 
         //trace(dx);
@@ -77,7 +96,7 @@ class Background extends h2d.Object {
 		g.moveTo(-200, 0);
 		g.lineTo(200, 0);
 
-        
+        for (p in points){drawdraft(p.x,p.y); }
         for (p in points){drawmir(p.x,p.y); }
         
         drawmir(cx,cy);
