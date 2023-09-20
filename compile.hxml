@@ -4,5 +4,6 @@
 # -lib hldx for windows
 -hl ./hl/mainapp.hl
 -main MainApp
--D windowSize=400x400
+-D windowSize=800x800
 -D windowTitle=axe
+-D no-deprecation-warnings

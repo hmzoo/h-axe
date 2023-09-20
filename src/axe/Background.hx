@@ -1,5 +1,7 @@
 package axe;
 
+import axe.Params.*;
+
 final color_axes = 0xC0C0C0;
 final color_ang = 0x87CEEB;
 final color_mir = 0x483D8B;
@@ -7,9 +9,10 @@ final color_mir = 0x483D8B;
 class Background extends h2d.Object {
 	var g:h2d.Graphics;
 	var itv:h2d.Interactive;
-    var cx:Float=0;
-    var cy:Float=0;
-    var points:Array<h2d.col.Point>=[];
+    var cursor_x:Float=0;
+    var cursor_y:Float=0;
+    var mirs:Array<Mir>=[];
+    var smirid:Int=0;
 
 
 
@@ -18,63 +21,59 @@ class Background extends h2d.Object {
 	public function new(scene:h2d.Scene) {
 		super(scene);
 
-        for (i in 0...6) {
-            points.push(new h2d.col.Point(-100+i*50,0));
+        for (i in 0...MIR_NUM) {
+            mirs.push(new Mir(-SCREEN_WIDTH/2+i*(SCREEN_WIDTH/MIR_NUM),0));
         }
 
 		g = new h2d.Graphics(this);
-		g.x = 200;
-		g.y = 200;
+		g.x = SCREEN_WIDTH/2;
+		g.y = SCREEN_HEIGHT/2;
 		g.scaleY = -1;
 
-		itv = new h2d.Interactive(400, 400, this);
+		itv = new h2d.Interactive(SCREEN_WIDTH, SCREEN_HEIGHT, this);
 		// itv.x=200;
 		// itv.y=200;
 		// itv.scaleY=-1;
 		itv.onMove = this.onMove;
         itv.onPush = function(e:hxd.Event){flag_push=true;onMove(e);};
-        itv.onRelease = function(e:hxd.Event){flag_push=false;};
+        itv.onRelease = function(e:hxd.Event){
+            flag_push=false;        
+            for ( m in mirs){
+            m.lck=false;};
+        };
 
 		this.redraw();
 	}
 
 
-    public function drawdraft(ccx:Float,ccy:Float){
+    public function drawdraft(m:Mir){
 
-        var cl:Float=30;
-        var cr = dst(ccx, ccy);
-        var ra = rap(0,-cr,ccx,ccy);
-        var dx=Math.sqrt(cl*cl/(1+ra*ra));
 
         g.lineStyle(2, color_ang);
-		g.moveTo(0, -cr);
-		g.lineTo(ccx, ccy);
-		g.lineTo(0, cr);
+		g.moveTo(0, -m.cr);
+		g.lineTo(m.cx, m.cy);
+		g.lineTo(0, m.cr);
 
-        g.drawCircle(0, 0, cr);
-
-
+        g.drawCircle(0, 0, m.cr);
 
         g.lineStyle(0);
 		g.endFill();
 
     }
 
-    public function drawmir(ccx:Float,ccy:Float){
+    public function drawmir(m:Mir){
 
-        var cl:Float=30;
-        var cr = dst(ccx, ccy);
-        var ra = rap(0,-cr,ccx,ccy);
-        var dx=Math.sqrt(cl*cl/(1+ra*ra));
+
 
         g.lineStyle(2, color_mir);
-        g.moveTo(ccx-dx,ccy-dx*ra);
-        g.lineTo(ccx+dx,ccy+dx*ra);
+        g.moveTo(m.acx,m.acy);
+        g.lineTo(m.bcx,m.bcy);
 
 		g.lineStyle(0);
 
 		g.beginFill(color_mir);
-		g.drawCircle(ccx, ccy, 3, 6);
+		g.drawCircle(m.bcx, m.bcy, 3, 6);
+        g.drawCircle(m.acx, m.acy, 3, 6);
 
 		g.lineStyle(0);
 		g.endFill();
@@ -87,44 +86,76 @@ class Background extends h2d.Object {
 		g.clear();
 
 		g.beginFill(0xFFFFFF);
-		g.drawRect(-200, -200, 400, 400);
+		g.drawRect(-SCREEN_WIDTH/2, -SCREEN_HEIGHT/2, SCREEN_WIDTH, SCREEN_HEIGHT);
+        
 		g.endFill();
 
 		g.lineStyle(2, color_axes);
-		g.moveTo(0, -200);
-		g.lineTo(0, 200);
-		g.moveTo(-200, 0);
-		g.lineTo(200, 0);
+		g.moveTo(0, -SCREEN_HEIGHT/2);
+		g.lineTo(0, SCREEN_HEIGHT/2);
+		g.moveTo(-SCREEN_WIDTH/2, 0);
+		g.lineTo(SCREEN_WIDTH/2, 0);
 
-        for (p in points){drawdraft(p.x,p.y); }
-        for (p in points){drawmir(p.x,p.y); }
+        for (m in mirs){drawdraft(m); }
+        for (m in mirs){drawmir(m); }
+
+
+        // g.beginFill(0xDF1652);
+        // g.drawCircle(mirs[0].cx, mirs[0].cy, 8, 6);
+        // g.endFill();
         
-        drawmir(cx,cy);
+
 
 		
 	}
 
 	function onMove(e:hxd.Event) {
         if(flag_push){
-		cx = e.relX - 200;
-		cy = -e.relY + 200;
-        var i:Int =0;
+		cursor_x = e.relX - SCREEN_WIDTH/2;
+		cursor_y = -e.relY + SCREEN_HEIGHT/2;
+        
         var d:Float=1000;
-        for (k => p in points){
-            if(dst(cx-p.x,cy-p.y)<d){d=dst(cx-p.x,cy-p.y);i=k;}
+        for (k => m in mirs){
+            m.lck=false;
+            if(m.cdst(cursor_x ,cursor_y)<d){d=m.cdst(cursor_x ,cursor_y);smirid=k;}
         }
-        points[i].x=cx;
-        points[i].y=cy;
-
+        mirs[smirid].calc(cursor_x,cursor_y);
+        mirs[smirid].lck=true;
 		this.redraw();
         }
 	}
 
-	function dst(x:Float, y:Float) {
-		return Math.sqrt(x * x + y * y);
-	}
+    public function update(){
+        mirs[0].smooth(null,mirs[1]);
+        for (i in 1...MIR_NUM-1) {
+            mirs[i].smooth(mirs[i-1],mirs[i+1]);
+        }
+        mirs[MIR_NUM-1].smooth(mirs[MIR_NUM-2],null);
 
-    function rap(xa:Float,ya:Float,xb:Float,yb:Float){
-        return (yb-ya)/(xb-xa);
+        for (i in 0...MIR_NUM) {
+               mirs[i].dosmooth();
+        }
+        this.redraw();
+
     }
+
+    public function tosvg(){
+        var svg="<svg width=\"800\" height=\"800\" viewBox=\"-400 -400 800 800\">";
+
+        svg=svg+"<circle cx=\"0\" cy=\"0\" r=\"5\" fill=\"green\" />\n";
+        svg=svg+"<path stroke=\"#333333\" stroke-width=\"3\" fill=\"none\" d=\" \n ";
+        
+        svg=svg+"M "+mirs[0].acx+","+mirs[0].acy+" \n";
+        for (i in 1...MIR_NUM) {
+            svg=svg+"L "+mirs[i].acx+","+mirs[i].acy+" \n";
+        }
+        svg=svg+"M "+mirs[MIR_NUM-1].bcx+","+mirs[MIR_NUM-1].bcy+" \" \n";
+
+        svg=svg+"/> \n</svg>";
+        return svg;
+
+
+    }
+
+
 }

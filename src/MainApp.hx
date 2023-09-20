@@ -9,6 +9,7 @@ class  MainApp  extends hxd.App {
   
     var infos:h2d.Text;
     var background:axe.Background;
+    var btn:axe.Btn;
 
 
  
@@ -24,6 +25,12 @@ class  MainApp  extends hxd.App {
         s2d.addChild(infos);
 
         background=new Background(s2d);
+        background.y=30;
+
+        btn = new Btn("OK",s2d);
+        btn.x=600;
+        btn.y=0;
+        btn.pushed =function(){ trace (background.tosvg());};
  
 
 
@@ -35,6 +42,7 @@ class  MainApp  extends hxd.App {
         var w = hxd.Window.getInstance().width;
 		var h = hxd.Window.getInstance().height;
         //infos.text="Size :"+w+" X "+h;   
+        background.update();
         
     }
 
